@@ -165,7 +165,7 @@ export default function PokemonDetail({ identifier, onClose }) {
                     <div key={s.stat.name} className="flex items-center gap-3">
                       <div className="w-28 text-sm text-slate-300 capitalize">{s.stat.name}</div>
                       <div className="flex-1 bg-slate-800 rounded-full h-3 overflow-hidden">
-                        <div className="h-3 rounded-full bg-gradient-to-r from-sky-400 to-sky-600" style={{ width: `${pct}%` }} />
+                        <div className="h-3 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600" style={{ width: `${pct}%` }} />
                       </div>
                       <div className="w-10 text-right text-sm text-slate-100">{s.base_stat}</div>
                     </div>
@@ -180,14 +180,6 @@ export default function PokemonDetail({ identifier, onClose }) {
                 {evoList.length ? (
                   evoList.map((n) => (
                     <div key={n} className="w-28 text-center">
-                      <img
-                        src={`https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${n}.png`}
-                        alt={n}
-                        className="h-20 mx-auto object-contain"
-                        onError={(e) => {
-                          e.currentTarget.src = "/mnt/data/bab87814-bec1-4ed0-a754-6dcf0203f414.png";
-                        }}
-                      />
                       <div className="mt-2 text-sm text-slate-200 capitalize">{n}</div>
                     </div>
                   ))

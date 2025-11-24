@@ -148,6 +148,8 @@ export default function HomePage({ searchQuery }) {
     return (
         <div className="pt-24 px-4 max-w-7xl mx-auto">
             <h1 className="text-3xl font-bold text-sky-500 mb-6">
+            {/* TITLE */}
+            <h1 className="text-3xl font-bold text-sky-500 mb-6 tracking-tight drop-shadow-[0_0_5px_yellow]">
                 {selectedType
                     ? `Kategori: ${selectedType.toUpperCase()}`
                     : "All Pokémon"}
@@ -163,6 +165,11 @@ export default function HomePage({ searchQuery }) {
             )}
 
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
+            {/* GRID LIST */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 bg-no-repeat bg-center bg-contain mx-auto bg-fixed"
+                style={{
+                    backgroundImage: "url('/src/assets/image/logo.png')",
+                }}>
                 {!loading &&
                     filtered.map((pokemon, i) => {
                         const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
@@ -209,7 +216,7 @@ export default function HomePage({ searchQuery }) {
             </div>
 
             {selectedPokemon && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center pt-10">
+                <div className="fixed inset-0 z-50 flex items-start justify-center">
                     <div
                         className="absolute inset-0 bg-black/50"
                         onClick={closeDetail}
