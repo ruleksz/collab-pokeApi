@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Logo from "../assets/image/logo.png"
 
 export default function Navbar() {
     const [open, setOpen] = useState(false);
@@ -80,11 +81,9 @@ export default function Navbar() {
                     {/* Logo */}
                     <div className="flex items-center gap-4">
                         <a href="#" className="flex items-center gap-3">
-                            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold">
-                                P
-                            </div>
+                            <img src={Logo} alt="" className="h-10 w-auto tracking-tight drop-shadow-[0_0_5px_yellow]" />
                             <div className="hidden sm:block">
-                                <span className="text-lg text-sky-500 font-semibold tracking-tight">
+                                <span className="text-lg text-sky-500 font-semibold tracking-tight drop-shadow-[0_0_5px_yellow]">
                                     Pokemon-API
                                 </span>
                             </div>
