@@ -142,7 +142,7 @@ export default function HomePage() {
                                 <img
                                     src={img}
                                     alt={pokemon.name}
-                                    className="w-40 h-40 mx-auto tracking-tight drop-shadow-[0_0_5px_yellow]  animate-spin"
+                                    className="w-40 h-40 mx-auto tracking-tight drop-shadow-[0_0_5px_yellow]  animate-bounce"
                                 />
 
                                 <p className="text-center mt-2 font-medium capitalize text-sky-600">
