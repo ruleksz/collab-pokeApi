@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import PokemonDetail from "../components/PokemonDetail.jsx";
 
 export default function HomePage() {
     const [pokemons, setPokemons] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState(null);
+
+    // <<< TAMBAHKAN: state untuk membuka detail (nama atau id)
+    const [selectedPokemon, setSelectedPokemon] = useState(null);
 
     // 🔹 Ambil kategori dari URL hash (#/type/fire)
     function getTypeFromHash() {
@@ -101,11 +105,21 @@ export default function HomePage() {
         }),
     };
 
+    // <<< TAMBAHKAN: fungsi pembuka & penutup detail
+    function openDetail(nameOrId) {
+        setSelectedPokemon(nameOrId);
+        // opsional: sync ke hash, misal: window.location.hash = `#/pokemon/${nameOrId}`;
+    }
+
+    function closeDetail() {
+        setSelectedPokemon(null);
+        // opsional: hapus hash atau kembalikan
+    }
+
     return (
-        <div className="pt-24 px-4 max-w-7xl mx-auto"
-        >
+        <div className="pt-24 px-4 max-w-7xl mx-auto">
             {/* TITLE */}
-            <h1 className="text-3xl font-bold text-sky-500 mb-6 tracking-tight drop-shadow-[0_0_5px_yellow]">
+            <h1 className="text-3xl font-bold text-sky-500 mb-6">
                 {selectedType
                     ? `Kategori: ${selectedType.toUpperCase()}`
                     : "All Pokémon"}
@@ -122,12 +136,12 @@ export default function HomePage() {
             )}
 
             {/* GRID LIST */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 bg-no-repeat bg-center bg-contain mx-auto bg-fixed"
-                style={{
-                    backgroundImage: "url('/src/assets/image/logo.png')",
-                }}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
                 {!loading &&
                     pokemons.map((pokemon, i) => {
+                        // gunakan id numeric untuk image agar konsisten
+                        // NOTE: kamu bisa pakai official-artwork jika ingin gambar lebih besar:
+                        // `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`
                         const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
 
                         return (
@@ -137,12 +151,20 @@ export default function HomePage() {
                                 initial="hidden"
                                 animate="show"
                                 variants={cardVariants}
+                                // <<< TAMBAHKAN: klik card buka detail, tetap jaga accessibility
+                                onClick={() => openDetail(pokemon.name)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" || e.key === " ") openDetail(pokemon.name);
+                                }}
                                 className="bg-white/70 shadow rounded-xl p-4 border border-sky-100 backdrop-blur hover:shadow-lg transition cursor-pointer hover:scale-105"
                             >
                                 <img
                                     src={img}
                                     alt={pokemon.name}
-                                    className="w-40 h-40 mx-auto tracking-tight drop-shadow-[0_0_5px_yellow]  animate-spin"
+                                    className="w-40 h-40 mx-auto"
+                                    loading="lazy"
                                 />
 
                                 <p className="text-center mt-2 font-medium capitalize text-sky-600">
@@ -164,6 +186,20 @@ export default function HomePage() {
                         );
                     })}
             </div>
+
+            {/* <<< TAMBAHKAN: Modal overlay yang memanggil PokemonDetail (sesuai komponen detail mu) */}
+            {selectedPokemon && (
+                <div className="fixed inset-0 z-50 flex items-start justify-center pt-10">
+                    <div
+                        className="absolute inset-0 bg-black/50"
+                        onClick={closeDetail}
+                        aria-hidden="true"
+                    />
+                    <div className="relative w-full max-w-4xl mx-4">
+                        <PokemonDetail identifier={selectedPokemon} onClose={closeDetail} />
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
