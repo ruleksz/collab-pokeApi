@@ -2,15 +2,36 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import PokemonDetail from "../components/PokemonDetail.jsx";
 
-export default function HomePage() {
+export default function HomePage({ searchQuery }) {
     const [pokemons, setPokemons] = useState([]);
+    const [filtered, setFiltered] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedType, setSelectedType] = useState(null);
-
-    // <<< TAMBAHKAN: state untuk membuka detail (nama atau id)
     const [selectedPokemon, setSelectedPokemon] = useState(null);
 
-    // 🔹 Ambil kategori dari URL hash (#/type/fire)
+    // -------------------------
+    // CARD ANIMATION VARIANTS
+    // -------------------------
+    const cardVariants = {
+        hidden: { opacity: 0, y: 20 },
+        show: (i) => ({
+            opacity: 1,
+            y: 0,
+            transition: { delay: i * 0.05 },
+        }),
+    };
+
+    // -------------------------
+    // DETAIL MODAL HANDLER
+    // -------------------------
+    function openDetail(nameOrId) {
+        setSelectedPokemon(nameOrId);
+    }
+
+    function closeDetail() {
+        setSelectedPokemon(null);
+    }
+
     function getTypeFromHash() {
         const hash = window.location.hash;
         if (hash.startsWith("#/type/")) {
@@ -19,35 +40,30 @@ export default function HomePage() {
         return null;
     }
 
-    // 🔹 Update kategori jika URL berubah
     useEffect(() => {
         function onHashChange() {
             const type = getTypeFromHash();
             setSelectedType(type);
         }
         window.addEventListener("hashchange", onHashChange);
-
-        onHashChange(); // initial load
-
+        onHashChange();
         return () => window.removeEventListener("hashchange", onHashChange);
     }, []);
 
-    // ----------------------------------------------------
-    // 🔹 Fetch Pokémon (all atau by type)
-    // ----------------------------------------------------
+    // ===========================
+    // LOAD POKEMON
+    // ===========================
     useEffect(() => {
         async function loadPokemon() {
             setLoading(true);
 
             try {
-                // ===========================
-                // CASE 1: FILTER BY TYPE
-                // ===========================
+                // CASE: TYPE FILTER
                 if (selectedType) {
                     const res = await fetch(`https://pokeapi.co/api/v2/type/${selectedType}`);
                     const data = await res.json();
 
-                    const list = data.pokemon.slice(0, 200); // limit biar cepat
+                    const list = data.pokemon.slice(0, 200);
 
                     const details = await Promise.all(
                         list.map(async (p) => {
@@ -62,17 +78,15 @@ export default function HomePage() {
                     );
 
                     setPokemons(details);
+                    setFiltered(details);
                     setLoading(false);
                     return;
                 }
 
-                // ===========================
-                // CASE 2: ALL POKEMON
-                // ===========================
+                // CASE: ALL POKEMON
                 const res = await fetch("https://pokeapi.co/api/v2/pokemon?limit=200");
                 const data = await res.json();
 
-                // Ambil detail untuk mendapatkan type
                 const details = await Promise.all(
                     data.results.map(async (p) => {
                         const r = await fetch(p.url);
@@ -86,6 +100,7 @@ export default function HomePage() {
                 );
 
                 setPokemons(details);
+                setFiltered(details);
             } catch (err) {
                 console.error(err);
             }
@@ -96,28 +111,43 @@ export default function HomePage() {
         loadPokemon();
     }, [selectedType]);
 
-    const cardVariants = {
-        hidden: { opacity: 0, y: 20 },
-        show: (i) => ({
-            opacity: 1,
-            y: 0,
-            transition: { delay: i * 0.05 },
-        }),
-    };
+    // ===========================
+    // COMBINED FILTER (TYPE + SEARCH)
+    // ===========================
+    useEffect(() => {
+        let result = pokemons;
 
-    // <<< TAMBAHKAN: fungsi pembuka & penutup detail
-    function openDetail(nameOrId) {
-        setSelectedPokemon(nameOrId);
-        // opsional: sync ke hash, misal: window.location.hash = `#/pokemon/${nameOrId}`;
-    }
+        const q = searchQuery?.toLowerCase().trim() || "";
 
-    function closeDetail() {
-        setSelectedPokemon(null);
-        // opsional: hapus hash atau kembalikan
-    }
+        // FILTER BY TYPE (jika lagi lihat tipe)
+        if (selectedType) {
+            result = result.filter((p) => p.types.includes(selectedType));
+        }
+
+        // FILTER BY SEARCH
+        if (q !== "") {
+
+            // 1) Filter by name
+            const byName = result.filter((p) =>
+                p.name.toLowerCase().includes(q)
+            );
+
+            // 2) Filter by type
+            const byType = result.filter((p) =>
+                p.types.some((t) => t.toLowerCase().includes(q))
+            );
+
+            // Gabungkan (menghilangkan duplikat)
+            result = [...new Set([...byName, ...byType])];
+        }
+
+        setFiltered(result);
+    }, [searchQuery, pokemons, selectedType]);
+
 
     return (
         <div className="pt-24 px-4 max-w-7xl mx-auto">
+            <h1 className="text-3xl font-bold text-sky-500 mb-6">
             {/* TITLE */}
             <h1 className="text-3xl font-bold text-sky-500 mb-6 tracking-tight drop-shadow-[0_0_5px_yellow]">
                 {selectedType
@@ -125,7 +155,6 @@ export default function HomePage() {
                     : "All Pokémon"}
             </h1>
 
-            {/* LOADING */}
             {loading && (
                 <div className="flex justify-center items-center mb-[580px]">
                     <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-sky-400"></div>
@@ -135,16 +164,14 @@ export default function HomePage() {
                 </div>
             )}
 
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
             {/* GRID LIST */}
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5 bg-no-repeat bg-center bg-contain mx-auto bg-fixed"
                 style={{
                     backgroundImage: "url('/src/assets/image/logo.png')",
                 }}>
                 {!loading &&
-                    pokemons.map((pokemon, i) => {
-                        // gunakan id numeric untuk image agar konsisten
-                        // NOTE: kamu bisa pakai official-artwork jika ingin gambar lebih besar:
-                        // `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${pokemon.id}.png`
+                    filtered.map((pokemon, i) => {
                         const img = `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${pokemon.id}.png`;
 
                         return (
@@ -154,7 +181,6 @@ export default function HomePage() {
                                 initial="hidden"
                                 animate="show"
                                 variants={cardVariants}
-                                // <<< TAMBAHKAN: klik card buka detail, tetap jaga accessibility
                                 onClick={() => openDetail(pokemon.name)}
                                 role="button"
                                 tabIndex={0}
@@ -166,7 +192,7 @@ export default function HomePage() {
                                 <img
                                     src={img}
                                     alt={pokemon.name}
-                                    className="w-40 h-40 mx-auto tracking-tight drop-shadow-[0_0_5px_yellow]  animate-bounce"
+                                    className="w-40 h-40 mx-auto tracking-tight drop-shadow-[0_0_5px_yellow] animate-bounce"
                                     loading="lazy"
                                 />
 
@@ -174,7 +200,6 @@ export default function HomePage() {
                                     {pokemon.name}
                                 </p>
 
-                                {/* 🔹 TYPE BADGES */}
                                 <div className="flex justify-center gap-2 mt-2 flex-wrap">
                                     {pokemon.types.map((t) => (
                                         <span
@@ -190,7 +215,6 @@ export default function HomePage() {
                     })}
             </div>
 
-            {/* <<< TAMBAHKAN: Modal overlay yang memanggil PokemonDetail (sesuai komponen detail mu) */}
             {selectedPokemon && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center">
                     <div
