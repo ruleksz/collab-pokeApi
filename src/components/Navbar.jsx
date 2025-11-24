@@ -6,16 +6,21 @@ export default function Navbar() {
     const [productsOpen, setProductsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
-    // 🔹 State untuk kategori dari API
+    // Types from API
     const [types, setTypes] = useState([]);
 
-    // 🔹 Fetch Pokemon Types
+    // Search states
+    const [query, setQuery] = useState("");
+    const [searchResult, setSearchResult] = useState(null);
+    const [searchError, setSearchError] = useState("");
+
+    // Fetch Pokemon Types
     useEffect(() => {
         async function fetchTypes() {
             try {
                 const res = await fetch("https://pokeapi.co/api/v2/type");
                 const data = await res.json();
-                setTypes(data.results); // { name, url }
+                setTypes(data.results);
             } catch (err) {
                 console.error("Failed to load types:", err);
             }
@@ -23,7 +28,7 @@ export default function Navbar() {
         fetchTypes();
     }, []);
 
-    // 🔹 Scroll effect
+    // Scroll effect
     useEffect(() => {
         function onScroll() {
             setScrolled(window.scrollY > 20);
@@ -33,6 +38,38 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
+    // 🔎 Search function (name & type)
+    async function handleSearch(e) {
+        if (e.key !== "Enter") return;
+
+        const q = query.toLowerCase().trim();
+        if (!q) return;
+
+        // Check if q is a type
+        const isType = types.some(t => t.name === q);
+        if (isType) {
+            window.location.href = `#/type/${q}`;
+            return;
+        }
+
+        // Otherwise try search by Pokémon name
+        try {
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${q}`);
+            if (!res.ok) {
+                setSearchError("Pokemon tidak ditemukan!");
+                setSearchResult(null);
+                return;
+            }
+
+            const data = await res.json();
+            setSearchResult(data);
+            setSearchError("");
+        } catch (err) {
+            setSearchError("Gagal mengambil data");
+            setSearchResult(null);
+        }
+    }
+
     return (
         <header
             className={`fixed w-full z-50 transition-shadow duration-300 ${scrolled ? "shadow-md bg-white/10 backdrop-blur" : "bg-transparent"
@@ -40,7 +77,7 @@ export default function Navbar() {
         >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    {/* Left - Logo */}
+                    {/* Logo */}
                     <div className="flex items-center gap-4">
                         <a href="#" className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold">
@@ -54,13 +91,13 @@ export default function Navbar() {
                         </a>
                     </div>
 
-                    {/* Center - Links (desktop) */}
+                    {/* Desktop Links */}
                     <div className="hidden md:flex md:items-center md:space-x-6 text-sky-500">
                         <a href="#" className="text-sm font-medium hover:text-sky-600">
                             Home
                         </a>
 
-                        {/* Dropdown Kategori */}
+                        {/* Dropdown Types */}
                         <div className="relative">
                             <button
                                 onMouseEnter={() => setProductsOpen(true)}
@@ -78,7 +115,7 @@ export default function Navbar() {
                                 </svg>
                             </button>
 
-                            {/* Desktop Dropdown */}
+                            {/* Types Dropdown */}
                             <AnimatePresence>
                                 {productsOpen && (
                                     <motion.div
@@ -104,14 +141,18 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* Right - Actions */}
+                    {/* Right Section */}
                     <div className="flex items-center gap-3">
+                        {/* Search */}
                         <div className="hidden md:flex items-center gap-2">
                             <div className="relative">
                                 <input
                                     aria-label="Search"
                                     className="w-48 px-3 py-1.5 rounded-full border text-sky-500 border-sky-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
-                                    placeholder="Search..."
+                                    placeholder="Search by name or type..."
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyDown={handleSearch}
                                 />
                             </div>
                         </div>
@@ -124,8 +165,7 @@ export default function Navbar() {
                                 className="inline-flex items-center justify-center p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-300"
                             >
                                 <svg
-                                    className={`w-6 h-6 transition-transform ${open ? "rotate-90" : ""
-                                        }`}
+                                    className={`w-6 h-6 transition-transform ${open ? "rotate-90" : ""}`}
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
@@ -151,7 +191,32 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {/* Mobile menu panel */}
+                {/* Search Results */}
+                {searchError && (
+                    <div className="absolute right-8 top-16 bg-red-500 text-white px-3 py-1 rounded">
+                        {searchError}
+                    </div>
+                )}
+
+                {searchResult && (
+                    <div className="absolute right-8 top-16 bg-white shadow-lg p-4 rounded w-64">
+                        <h3 className="text-sky-600 font-bold capitalize">
+                            {searchResult.name}
+                        </h3>
+                        <img
+                            src={searchResult.sprites.front_default}
+                            alt={searchResult.name}
+                            className="w-20 h-20 mx-auto"
+                        />
+                        <p className="text-sm mt-2">
+                            Height: {searchResult.height}
+                            <br />
+                            Weight: {searchResult.weight}
+                        </p>
+                    </div>
+                )}
+
+                {/* Mobile Menu */}
                 <AnimatePresence>
                     {open && (
                         <motion.div
@@ -162,14 +227,11 @@ export default function Navbar() {
                             className="md:hidden overflow-hidden"
                         >
                             <div className="px-2 pt-4 pb-6 space-y-3 text-sky-500">
-                                <a
-                                    href="#"
-                                    className="block px-3 py-2 rounded-md text-base font-medium"
-                                >
+                                <a href="#" className="block px-3 py-2 rounded-md text-base font-medium">
                                     Home
                                 </a>
 
-                                {/* Mobile dropdown kategori */}
+                                {/* Mobile Dropdown */}
                                 <div>
                                     <button
                                         onClick={() => setProductsOpen((s) => !s)}
