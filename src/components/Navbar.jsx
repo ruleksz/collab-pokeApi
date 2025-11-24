@@ -1,22 +1,26 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Logo from "../assets/image/logo.png"
 
 export default function Navbar() {
     const [open, setOpen] = useState(false);
     const [productsOpen, setProductsOpen] = useState(false);
     const [scrolled, setScrolled] = useState(false);
 
-    // 🔹 State untuk kategori dari API
+    // Types from API
     const [types, setTypes] = useState([]);
 
-    // 🔹 Fetch Pokemon Types
+    // Search states
+    const [query, setQuery] = useState("");
+    const [searchResult, setSearchResult] = useState(null);
+    const [searchError, setSearchError] = useState("");
+
+    // Fetch Pokemon Types
     useEffect(() => {
         async function fetchTypes() {
             try {
                 const res = await fetch("https://pokeapi.co/api/v2/type");
                 const data = await res.json();
-                setTypes(data.results); // { name, url }
+                setTypes(data.results);
             } catch (err) {
                 console.error("Failed to load types:", err);
             }
@@ -24,7 +28,7 @@ export default function Navbar() {
         fetchTypes();
     }, []);
 
-    // 🔹 Scroll effect
+    // Scroll effect
     useEffect(() => {
         function onScroll() {
             setScrolled(window.scrollY > 20);
@@ -34,6 +38,38 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", onScroll);
     }, []);
 
+    // 🔎 Search function (name & type)
+    async function handleSearch(e) {
+        if (e.key !== "Enter") return;
+
+        const q = query.toLowerCase().trim();
+        if (!q) return;
+
+        // Check if q is a type
+        const isType = types.some(t => t.name === q);
+        if (isType) {
+            window.location.href = `#/type/${q}`;
+            return;
+        }
+
+        // Otherwise try search by Pokémon name
+        try {
+            const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${q}`);
+            if (!res.ok) {
+                setSearchError("Pokemon tidak ditemukan!");
+                setSearchResult(null);
+                return;
+            }
+
+            const data = await res.json();
+            setSearchResult(data);
+            setSearchError("");
+        } catch (err) {
+            setSearchError("Gagal mengambil data");
+            setSearchResult(null);
+        }
+    }
+
     return (
         <header
             className={`fixed w-full z-50 transition-shadow duration-300 ${scrolled ? "shadow-md bg-white/10 backdrop-blur" : "bg-transparent"
@@ -41,31 +77,33 @@ export default function Navbar() {
         >
             <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="flex items-center justify-between h-16">
-                    {/* Left - Logo */}
+                    {/* Logo */}
                     <div className="flex items-center gap-4">
                         <a href="#" className="flex items-center gap-3">
-                            <img src={Logo} alt="" className="w-20 h-auto tracking-tight drop-shadow-[0_0_5px_yellow]" />
+                            <div className="h-10 w-10 rounded-lg bg-gradient-to-br from-sky-400 to-indigo-600 flex items-center justify-center text-white font-bold">
+                                P
+                            </div>
                             <div className="hidden sm:block">
-                                <p className="text-lg text-sky-500 font-bold tracking-tight drop-shadow-[0_0_5px_yellow]">
+                                <span className="text-lg text-sky-500 font-semibold tracking-tight">
                                     Pokemon-API
-                                </p>
+                                </span>
                             </div>
                         </a>
                     </div>
 
-                    {/* Center - Links (desktop) */}
+                    {/* Desktop Links */}
                     <div className="hidden md:flex md:items-center md:space-x-6 text-sky-500">
-                        <a href="#" className="text-sm font-medium hover:text-yellow-400">
+                        <a href="#" className="text-sm font-medium hover:text-sky-600">
                             Home
                         </a>
 
-                        {/* Dropdown Kategori */}
+                        {/* Dropdown Types */}
                         <div className="relative">
                             <button
                                 onMouseEnter={() => setProductsOpen(true)}
                                 onMouseLeave={() => setProductsOpen(false)}
                                 onClick={() => setProductsOpen((s) => !s)}
-                                className="flex items-center gap-2 text-sm font-medium hover:text-yellow-400"
+                                className="flex items-center gap-2 text-sm font-medium hover:text-sky-600"
                             >
                                 Types
                                 <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
@@ -77,7 +115,7 @@ export default function Navbar() {
                                 </svg>
                             </button>
 
-                            {/* Desktop Dropdown */}
+                            {/* Types Dropdown */}
                             <AnimatePresence>
                                 {productsOpen && (
                                     <motion.div
@@ -86,13 +124,13 @@ export default function Navbar() {
                                         initial={{ opacity: 0, y: -6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         exit={{ opacity: 0, y: -6 }}
-                                        className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg backdrop-blur bg-white/35 ring-1 ring-black/5 p-3"
+                                        className="absolute left-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black/5 p-3"
                                     >
                                         {types.map((type) => (
                                             <a
                                                 key={type.name}
                                                 href={`#/type/${type.name}`}
-                                                className="block px-3 py-2 text-sm hover:bg-yellow-400 transition-all rounded capitalize"
+                                                className="block px-3 py-2 text-sm hover:bg-gray-50 rounded capitalize"
                                             >
                                                 {type.name}
                                             </a>
@@ -103,14 +141,18 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    {/* Right - Actions */}
+                    {/* Right Section */}
                     <div className="flex items-center gap-3">
+                        {/* Search */}
                         <div className="hidden md:flex items-center gap-2">
                             <div className="relative">
                                 <input
                                     aria-label="Search"
                                     className="w-48 px-3 py-1.5 rounded-full border text-sky-500 border-sky-500 text-sm focus:outline-none focus:ring-2 focus:ring-sky-300"
-                                    placeholder="Search..."
+                                    placeholder="Search by name or type..."
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyDown={handleSearch}
                                 />
                             </div>
                         </div>
@@ -120,11 +162,10 @@ export default function Navbar() {
                             <button
                                 onClick={() => setOpen((s) => !s)}
                                 aria-label="Toggle menu"
-                                className="inline-flex items-center justify-center p-2 text-sky-500 rounded-md focus:outline-none cursor-pointer"
+                                className="inline-flex items-center justify-center p-2 rounded-md focus:outline-none focus:ring-2 focus:ring-sky-300"
                             >
                                 <svg
-                                    className={`w-6 h-6 transition-transform ${open ? "rotate-90" : ""
-                                        }`}
+                                    className={`w-6 h-6 transition-transform ${open ? "rotate-90" : ""}`}
                                     viewBox="0 0 24 24"
                                     fill="none"
                                     stroke="currentColor"
@@ -150,7 +191,32 @@ export default function Navbar() {
                     </div>
                 </div>
 
-                {/* Mobile menu panel */}
+                {/* Search Results */}
+                {searchError && (
+                    <div className="absolute right-8 top-16 bg-red-500 text-white px-3 py-1 rounded">
+                        {searchError}
+                    </div>
+                )}
+
+                {searchResult && (
+                    <div className="absolute right-8 top-16 bg-white shadow-lg p-4 rounded w-64">
+                        <h3 className="text-sky-600 font-bold capitalize">
+                            {searchResult.name}
+                        </h3>
+                        <img
+                            src={searchResult.sprites.front_default}
+                            alt={searchResult.name}
+                            className="w-20 h-20 mx-auto"
+                        />
+                        <p className="text-sm mt-2">
+                            Height: {searchResult.height}
+                            <br />
+                            Weight: {searchResult.weight}
+                        </p>
+                    </div>
+                )}
+
+                {/* Mobile Menu */}
                 <AnimatePresence>
                     {open && (
                         <motion.div
@@ -161,22 +227,19 @@ export default function Navbar() {
                             className="md:hidden overflow-hidden"
                         >
                             <div className="px-2 pt-4 pb-6 space-y-3 text-sky-500">
-                                <a
-                                    href="#"
-                                    className="block px-3 py-2 rounded-md text-base font-medium hover:bg-yellow-400 transition-all"
-                                >
+                                <a href="#" className="block px-3 py-2 rounded-md text-base font-medium">
                                     Home
                                 </a>
 
-                                {/* Mobile dropdown kategori */}
+                                {/* Mobile Dropdown */}
                                 <div>
                                     <button
                                         onClick={() => setProductsOpen((s) => !s)}
-                                        className="w-full text-left px-3 py-2 rounded-md flex items-center justify-between hover:bg-yellow-400 transition-all"
+                                        className="w-full text-left px-3 py-2 rounded-md flex items-center justify-between"
                                     >
                                         <span>Types</span>
                                         <svg
-                                            className={`w-4 h-4 transition-transform  ${productsOpen ? "rotate-180" : ""
+                                            className={`w-4 h-4 transition-transform ${productsOpen ? "rotate-180" : ""
                                                 }`}
                                             viewBox="0 0 20 20"
                                             fill="currentColor"
@@ -201,7 +264,7 @@ export default function Navbar() {
                                                     <a
                                                         key={type.name}
                                                         href={`#/type/${type.name}`}
-                                                        className="block px-3 py-2 rounded-md text-sm capitalize hover:bg-yellow-500 transition-all"
+                                                        className="block px-3 py-2 rounded-md text-sm capitalize"
                                                     >
                                                         {type.name}
                                                     </a>
