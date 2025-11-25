@@ -50,7 +50,12 @@ export default function PokemonDetail({ identifier, onClose }) {
   }, [identifier]);
 
   if (!identifier) return null;
-  if (loading) return <div className="p-6 text-center text-slate-300">Loading...</div>;
+  if (loading) return <div className="flex justify-center items-center mb-[580px]">
+    <div className="animate-spin rounded-full h-20 w-20 border-t-2 border-b-2 border-sky-400"></div>
+    <span className="text-sky-300 ml-3 text-3xl animate-pulse">
+      Loading Pokémon...
+    </span>
+  </div>;
   if (error) return <div className="p-6 text-red-400">Error: {error}</div>;
   if (!pokemon) return null;
 
